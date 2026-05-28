@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "604469097548",
+    "firebase_url": "https://arcade-aura-default-rtdb.firebaseio.com",
+    "project_id": "arcade-aura",
+    "storage_bucket": "arcade-aura.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:604469097548:android:34568a32fa3b31e34b30e9",
+        "android_client_info": {
+          "package_name": "com.example.arcade_aura"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "604469097548-kp8fhgnrufbptgke5tjq6mh8p455n00h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.arcade_aura",
+            "certificate_hash": "0c8f1be0d2ad14dd868d16f87ac6ea6613b0dc62"
+          }
+        },
+        {
+          "client_id": "604469097548-6f09ik5roo9s6t5e7c2e3v4ds8b4kkuh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKd-SKrQC6HveXTnDXi1-Yl55AurXLAhQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "604469097548-6f09ik5roo9s6t5e7c2e3v4ds8b4kkuh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

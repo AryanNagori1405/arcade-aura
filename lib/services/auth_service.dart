@@ -14,7 +14,8 @@ class AuthService {
     required String email,
     required String password,
   }) {
-    return _auth.createUserWithEmailAndPassword(email: email, password: password);
+    return _auth.createUserWithEmailAndPassword(
+        email: email, password: password);
   }
 
   Future<UserCredential> login({
@@ -29,14 +30,25 @@ class AuthService {
   }
 
   Future<UserCredential?> signInWithGoogle() async {
-    final googleUser = await GoogleSignIn.instance.authenticate();
-    final auth = googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: auth.accessToken,
-      idToken: auth.idToken,
-    );
-    return _auth.signInWithCredential(credential);
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+
+  final GoogleSignInAccount? googleUser =
+      await googleSignIn.signIn();
+
+  if (googleUser == null) {
+    return null;
   }
+
+  final GoogleSignInAuthentication googleAuth =
+      await googleUser.authentication;
+
+  final credential = GoogleAuthProvider.credential(
+    accessToken: googleAuth.accessToken,
+    idToken: googleAuth.idToken,
+  );
+
+  return await _auth.signInWithCredential(credential);
+}
 
   Future<void> logout() => _auth.signOut();
 }
