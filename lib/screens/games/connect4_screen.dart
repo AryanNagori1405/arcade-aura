@@ -38,7 +38,7 @@ class Connect4Screen extends StatelessWidget {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     return GradientScaffold(
-      appBar: AppBar(title: Text('Connect 4 • $roomId')),
+      appBar: AppBar(title: const Text('Connect 4')),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: RoomService.instance.roomStream(roomId),
         builder: (context, snap) {

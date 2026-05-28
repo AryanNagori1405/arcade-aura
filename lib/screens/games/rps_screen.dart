@@ -28,7 +28,7 @@ class RpsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     return GradientScaffold(
-      appBar: AppBar(title: Text('RPS • $roomId')),
+      appBar: AppBar(title: const Text('Rock Paper Scissors')),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: RoomService.instance.roomStream(roomId),
         builder: (context, snap) {

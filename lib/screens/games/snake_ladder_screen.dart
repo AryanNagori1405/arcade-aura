@@ -30,7 +30,7 @@ class SnakeLadderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     return GradientScaffold(
-      appBar: AppBar(title: Text('Snake & Ladder • $roomId')),
+      appBar: AppBar(title: const Text('Snake & Ladder')),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: RoomService.instance.roomStream(roomId),
         builder: (context, snap) {

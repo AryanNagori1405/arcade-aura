@@ -31,7 +31,7 @@ class TicTacToeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final myUid = FirebaseAuth.instance.currentUser!.uid;
     return GradientScaffold(
-      appBar: AppBar(title: Text('Tic Tac Toe • $roomId')),
+      appBar: AppBar(title: const Text('Tic Tac Toe')),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: RoomService.instance.roomStream(roomId),
         builder: (context, snapshot) {
