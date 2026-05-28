@@ -10,6 +10,7 @@ import 'package:arcade_aura/widgets/gradient_scaffold.dart';
 import 'package:arcade_aura/widgets/neon_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key, required this.gameType, required this.gameTitle});
@@ -24,6 +25,7 @@ class LobbyScreen extends StatefulWidget {
 class _LobbyScreenState extends State<LobbyScreen> {
   final _roomIdController = TextEditingController();
   bool _loading = false;
+  bool _isMatchmaking = false;
 
   Future<void> _goToGame(String roomId) async {
     if (!mounted) return;
@@ -51,6 +53,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   Future<void> _createRoom() async {
+    if (_loading) return;
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final user = await UserService.instance.userStream(uid).first;
     setState(() => _loading = true);
@@ -59,11 +62,44 @@ class _LobbyScreenState extends State<LobbyScreen> {
       uid: uid,
       username: user.username,
     );
+    if (!mounted) return;
     setState(() => _loading = false);
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Room Created'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Share this Room ID with your friend:'),
+            const SizedBox(height: 8),
+            SelectableText(roomId, style: const TextStyle(fontWeight: FontWeight.w700)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: roomId));
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Room ID copied')),
+              );
+            },
+            child: const Text('Copy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
     await _goToGame(roomId);
   }
 
   Future<void> _joinRoom() async {
+    if (_loading) return;
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final user = await UserService.instance.userStream(uid).first;
     setState(() => _loading = true);
@@ -81,15 +117,23 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   Future<void> _randomMatch() async {
+    if (_loading) return;
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final user = await UserService.instance.userStream(uid).first;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _isMatchmaking = true;
+    });
     final roomId = await RoomService.instance.joinRandom(
       gameType: widget.gameType,
       uid: uid,
       username: user.username,
     );
-    setState(() => _loading = false);
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _isMatchmaking = false;
+    });
     await _goToGame(roomId!);
   }
 
@@ -100,21 +144,65 @@ class _LobbyScreenState extends State<LobbyScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _roomIdController,
-              decoration: const InputDecoration(labelText: 'Room ID'),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Private Room', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _roomIdController,
+                      decoration: const InputDecoration(labelText: 'Room ID'),
+                    ),
+                    const SizedBox(height: 10),
+                    if (_loading)
+                      const Center(child: CircularProgressIndicator())
+                    else ...[
+                      NeonButton(label: 'Create Room', icon: Icons.add, onTap: _createRoom),
+                      const SizedBox(height: 10),
+                      NeonButton(label: 'Join with Room ID', icon: Icons.group_add, onTap: _joinRoom),
+                    ],
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 14),
-            if (_loading)
-              const CircularProgressIndicator()
-            else ...[
-              NeonButton(label: 'Create Room', icon: Icons.add, onTap: _createRoom),
-              const SizedBox(height: 10),
-              NeonButton(label: 'Join with Room ID', icon: Icons.group_add, onTap: _joinRoom),
-              const SizedBox(height: 10),
-              NeonButton(label: 'Play Online (Random)', icon: Icons.bolt, onTap: _randomMatch),
-            ],
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Play Online', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    const Text('No Room ID needed. We will match you automatically.'),
+                    const SizedBox(height: 10),
+                    if (_isMatchmaking)
+                      const Row(
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(child: Text('Matchmaking... finding an opponent')),
+                        ],
+                      )
+                    else
+                      NeonButton(
+                        label: 'Play Online (Random)',
+                        icon: Icons.bolt,
+                        onTap: _randomMatch,
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

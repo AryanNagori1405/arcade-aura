@@ -28,7 +28,7 @@ class MemoryMatchScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     return GradientScaffold(
-      appBar: AppBar(title: Text('Memory Match • $roomId')),
+      appBar: AppBar(title: const Text('Memory Match')),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: RoomService.instance.roomStream(roomId),
         builder: (context, snap) {
