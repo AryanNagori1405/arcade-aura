@@ -195,9 +195,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                       ),
-                      child: const Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: const [
                           Text('• Fast matchmaking'),
                           SizedBox(height: 4),
                           Text('• Auto joins available players'),
@@ -215,16 +215,16 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            SizedBox(
+                            const SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
-                            SizedBox(width: 10),
-                            Expanded(child: Text('Matchmaking... finding an opponent')),
-                          ),
+                            const SizedBox(width: 10),
+                            const Expanded(child: Text('Matchmaking... finding an opponent')),
+                          ],
                         ),
                       )
                     else
