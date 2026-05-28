@@ -107,6 +107,13 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                  const SizedBox(height: 8),
+                  const Center(
+                    child: Text(
+                      'Made with ❤️ by Aryan Nagori',
+                      style: TextStyle(fontSize: 13, color: Colors.white70),
+                    ),
+                  ),
                 ],
               );
             },
