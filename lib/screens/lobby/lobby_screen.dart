@@ -177,25 +177,59 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Play Online', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    Row(
+                      children: [
+                        Icon(Icons.public, color: Theme.of(context).colorScheme.secondary),
+                        const SizedBox(width: 8),
+                        const Text('Play Online', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     const Text('No Room ID needed. We will match you automatically.'),
                     const SizedBox(height: 10),
-                    if (_isMatchmaking)
-                      const Row(
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(child: Text('Matchmaking... finding an opponent')),
+                          Text('• Fast matchmaking'),
+                          SizedBox(height: 4),
+                          Text('• Auto joins available players'),
+                          SizedBox(height: 4),
+                          Text('• Starts as soon as room is ready'),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (_isMatchmaking)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(child: Text('Matchmaking... finding an opponent')),
+                          ),
+                        ),
                       )
                     else
                       NeonButton(
-                        label: 'Play Online (Random)',
+                        label: 'Start Online Match',
                         icon: Icons.bolt,
                         onTap: _randomMatch,
                       ),
