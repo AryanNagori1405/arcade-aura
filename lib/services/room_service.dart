@@ -80,6 +80,113 @@ class RoomService {
     return _rooms.doc(roomId).update({...data, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
+  Future<void> initializeMatchDataIfEmpty({
+    required String roomId,
+    required Map<String, dynamic> initialMatchData,
+  }) async {
+    final ref = _rooms.doc(roomId);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data()!;
+      final matchData = Map<String, dynamic>.from(data['matchData'] ?? const {});
+      if (matchData.isNotEmpty) return;
+      tx.update(ref, {
+        'matchData': initialMatchData,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  Future<void> submitRpsChoice({
+    required String roomId,
+    required String uid,
+    required String choice,
+  }) async {
+    final ref = _rooms.doc(roomId);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data()!;
+      if (data['status'] == 'finished') return;
+      final players = List<String>.from(data['players'] ?? const []);
+      if (!players.contains(uid)) return;
+      final matchData = Map<String, dynamic>.from(data['matchData'] ?? const {});
+      final choices = Map<String, dynamic>.from(matchData['choices'] ?? const {});
+      if (choices.containsKey(uid)) return;
+      final round = (matchData['round'] ?? 1) as int;
+      final scores = Map<String, dynamic>.from(
+        matchData['scores'] ?? {if (players.isNotEmpty) players.first: 0, if (players.length > 1) players.last: 0},
+      );
+      tx.update(ref, {
+        'matchData.round': round,
+        'matchData.scores': scores,
+        'matchData.choices.$uid': choice,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  Future<void> submitQuizAnswer({
+    required String roomId,
+    required String uid,
+    required int answerIndex,
+  }) async {
+    final ref = _rooms.doc(roomId);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data()!;
+      if (data['status'] == 'finished') return;
+      final players = List<String>.from(data['players'] ?? const []);
+      if (!players.contains(uid)) return;
+      final matchData = Map<String, dynamic>.from(data['matchData'] ?? const {});
+      final answers = Map<String, dynamic>.from(matchData['answers'] ?? const {});
+      if (answers.containsKey(uid)) return;
+      tx.update(ref, {
+        'matchData.answers.$uid': answerIndex,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  Future<void> finalizeQuizQuestion({
+    required String roomId,
+    required int questionIndex,
+    required int correctAnswer,
+    required int nextDeadlineMs,
+  }) async {
+    final ref = _rooms.doc(roomId);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data()!;
+      if (data['status'] == 'finished') return;
+      final players = List<String>.from(data['players'] ?? const []);
+      if (players.length < 2) return;
+      final matchData = Map<String, dynamic>.from(data['matchData'] ?? const {});
+      final qIndex = (matchData['qIndex'] ?? 0) as int;
+      if (qIndex != questionIndex) return;
+      final answers = Map<String, dynamic>.from(matchData['answers'] ?? const {});
+      final deadlineMs = (matchData['deadlineMs'] ?? 0) as int;
+      final timeOver = DateTime.now().millisecondsSinceEpoch > deadlineMs;
+      if (!timeOver && answers.length < 2) return;
+      final scores = Map<String, dynamic>.from(matchData['scores'] ?? {players.first: 0, players.last: 0});
+      for (final p in players) {
+        if (answers[p] == correctAnswer) {
+          scores[p] = (scores[p] ?? 0) + 1;
+        }
+      }
+      tx.update(ref, {
+        'matchData.qIndex': qIndex + 1,
+        'matchData.answers': <String, int>{},
+        'matchData.scores': scores,
+        'matchData.deadlineMs': nextDeadlineMs,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
 
   Future<bool> finishRoom({
     required String roomId,
@@ -92,10 +199,14 @@ class RoomService {
       if (!snap.exists) return false;
       final data = snap.data()!;
       if (data['status'] == 'finished') return false;
+      final players = List<String>.from(data['players'] ?? const []);
+      if (players.isEmpty) return false;
+      if (!isDraw && !players.contains(winnerUid)) return false;
       tx.update(ref, {
         'status': 'finished',
         'winnerUid': isDraw ? '' : winnerUid,
         'matchData.isDraw': isDraw,
+        'matchData.resultApplied': false,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return true;

@@ -6,21 +6,36 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class MemoryMatchScreen extends StatelessWidget {
+class MemoryMatchScreen extends StatefulWidget {
   const MemoryMatchScreen({super.key, required this.roomId});
   final String roomId;
 
+  @override
+  State<MemoryMatchScreen> createState() => _MemoryMatchScreenState();
+}
+
+class _MemoryMatchScreenState extends State<MemoryMatchScreen> {
+  bool _isInitializing = false;
+  bool _isFinishing = false;
+  int? _lastMatchedCount;
+
   Future<void> _finish(Map<String, dynamic> data, String winnerUid, bool draw) async {
+    if (_isFinishing) return;
+    _isFinishing = true;
     final players = List<String>.from(data['players'] ?? const []);
-    final done = await RoomService.instance.finishRoom(roomId: roomId, winnerUid: winnerUid, isDraw: draw);
-    if (done) {
-      await TrophyService.instance.applyResult(
-        roomId: roomId,
-        gameType: 'memory_match',
-        players: players,
-        winnerUid: winnerUid,
-        isDraw: draw,
-      );
+    try {
+      final done = await RoomService.instance.finishRoom(roomId: widget.roomId, winnerUid: winnerUid, isDraw: draw);
+      if (done) {
+        await TrophyService.instance.applyResult(
+          roomId: widget.roomId,
+          gameType: 'memory_match',
+          players: players,
+          winnerUid: winnerUid,
+          isDraw: draw,
+        );
+      }
+    } finally {
+      _isFinishing = false;
     }
   }
 
@@ -30,7 +45,7 @@ class MemoryMatchScreen extends StatelessWidget {
     return GradientScaffold(
       appBar: AppBar(title: const Text('Memory Match')),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: RoomService.instance.roomStream(roomId),
+        stream: RoomService.instance.roomStream(widget.roomId),
         builder: (context, snap) {
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
           final data = snap.data!.data() ?? {};
@@ -46,27 +61,35 @@ class MemoryMatchScreen extends StatelessWidget {
           final scores = Map<String, dynamic>.from(md['scores'] ?? {players.first: 0, players.last: 0});
           final deadline = (md['deadlineMs'] ?? DateTime.now().millisecondsSinceEpoch + 30000) as int;
 
-          if (md.isEmpty) {
-            RoomService.instance.updateState(roomId, {
-              'matchData': {
-                'deck': deck,
-                'revealed': <int>[],
-                'matched': <int>[],
-                'picks': <int>[],
-                'scores': scores,
-                'deadlineMs': deadline,
-              },
+          if (md.isEmpty && !_isInitializing) {
+            _isInitializing = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              await RoomService.instance.initializeMatchDataIfEmpty(
+                roomId: widget.roomId,
+                initialMatchData: {
+                  'deck': deck,
+                  'revealed': <int>[],
+                  'matched': <int>[],
+                  'picks': <int>[],
+                  'scores': scores,
+                  'deadlineMs': deadline,
+                },
+              );
+              _isInitializing = false;
             });
           }
 
-          if (status != 'finished' && matched.length == deck.length) {
-            final a = scores[players.first] as int;
-            final b = scores[players.last] as int;
-            if (a == b) {
-              _finish(data, '', true);
-            } else {
-              _finish(data, a > b ? players.first : players.last, false);
-            }
+          if (status != 'finished' && matched.length == deck.length && _lastMatchedCount != matched.length) {
+            _lastMatchedCount = matched.length;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final a = scores[players.first] as int;
+              final b = scores[players.last] as int;
+              if (a == b) {
+                _finish(data, '', true);
+              } else {
+                _finish(data, a > b ? players.first : players.last, false);
+              }
+            });
           }
 
           return Padding(
@@ -92,7 +115,7 @@ class MemoryMatchScreen extends StatelessWidget {
                             final second = newPicks.last;
                             if (deck[first] == deck[second]) {
                               scores[uid] = (scores[uid] ?? 0) + 1;
-                              await RoomService.instance.updateState(roomId, {
+                              await RoomService.instance.updateState(widget.roomId, {
                                 'matchData': {
                                   'deck': deck,
                                   'revealed': revealed,
@@ -103,7 +126,7 @@ class MemoryMatchScreen extends StatelessWidget {
                                 }
                               });
                             } else {
-                              await RoomService.instance.updateState(roomId, {
+                              await RoomService.instance.updateState(widget.roomId, {
                                 'turnUid': players.first == uid ? players.last : players.first,
                                 'matchData': {
                                   'deck': deck,
@@ -116,7 +139,7 @@ class MemoryMatchScreen extends StatelessWidget {
                               });
                             }
                           } else {
-                            await RoomService.instance.updateState(roomId, {
+                            await RoomService.instance.updateState(widget.roomId, {
                               'matchData': {
                                 'deck': deck,
                                 'revealed': revealed,
