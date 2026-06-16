@@ -38,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
             duration: const Duration(milliseconds: 400),
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: Colors.white.withOpacity(0.06),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(

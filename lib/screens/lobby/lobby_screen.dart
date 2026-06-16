@@ -191,9 +191,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: Colors.white.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                        border: Border.all(color: Colors.white.withOpacity(0.12)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +212,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.14),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.14),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(

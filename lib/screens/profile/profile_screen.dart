@@ -62,7 +62,7 @@ class ProfileScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.2),
+                            color: Colors.amber.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text('🏆 ${me.trophies}', style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -117,8 +117,8 @@ class ProfileScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        border: Border.all(color: color.withValues(alpha: 0.55)),
+        color: color.withOpacity(0.18),
+        border: Border.all(color: color.withOpacity(0.55)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text('$label: $value', style: const TextStyle(fontWeight: FontWeight.w600)),

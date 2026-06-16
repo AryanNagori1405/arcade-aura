@@ -33,12 +33,12 @@ class _NeonButtonState extends State<NeonButton> {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
-          color: widget.color.withValues(alpha: _pressed ? 0.3 : 0.2),
+          color: widget.color.withOpacity(_pressed ? 0.3 : 0.2),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: widget.color, width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: widget.color.withValues(alpha: _pressed ? 0.2 : 0.45),
+              color: widget.color.withOpacity(_pressed ? 0.2 : 0.45),
               blurRadius: _pressed ? 8 : 16,
               spreadRadius: _pressed ? 0 : 1,
             ),

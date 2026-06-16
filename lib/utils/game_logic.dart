@@ -71,7 +71,7 @@ class GameLogic {
       17: 4,
       19: 7,
     };
-    final moved = (current + dice).clamp(1, 30);
+    final moved = (current + dice).clamp(1, 30).toInt();
     return jumps[moved] ?? moved;
   }
 }
