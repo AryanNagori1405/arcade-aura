@@ -5,9 +5,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class QuizBattleScreen extends StatelessWidget {
+class QuizBattleScreen extends StatefulWidget {
   const QuizBattleScreen({super.key, required this.roomId});
   final String roomId;
+
+  @override
+  State<QuizBattleScreen> createState() => _QuizBattleScreenState();
+}
+
+class _QuizBattleScreenState extends State<QuizBattleScreen> {
+  bool _isInitializing = false;
+  int? _lastScoredQuestion;
+  bool _isFinishing = false;
 
   static const questions = [
     {
@@ -28,16 +37,22 @@ class QuizBattleScreen extends StatelessWidget {
   ];
 
   Future<void> _finish(Map<String, dynamic> data, String winnerUid, bool draw) async {
+    if (_isFinishing) return;
+    _isFinishing = true;
     final players = List<String>.from(data['players'] ?? const []);
-    final done = await RoomService.instance.finishRoom(roomId: roomId, winnerUid: winnerUid, isDraw: draw);
-    if (done) {
-      await TrophyService.instance.applyResult(
-        roomId: roomId,
-        gameType: 'quiz_battle',
-        players: players,
-        winnerUid: winnerUid,
-        isDraw: draw,
-      );
+    try {
+      final done = await RoomService.instance.finishRoom(roomId: widget.roomId, winnerUid: winnerUid, isDraw: draw);
+      if (done) {
+        await TrophyService.instance.applyResult(
+          roomId: widget.roomId,
+          gameType: 'quiz_battle',
+          players: players,
+          winnerUid: winnerUid,
+          isDraw: draw,
+        );
+      }
+    } finally {
+      _isFinishing = false;
     }
   }
 
@@ -47,7 +62,7 @@ class QuizBattleScreen extends StatelessWidget {
     return GradientScaffold(
       appBar: AppBar(title: const Text('Quiz Battle')),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: RoomService.instance.roomStream(roomId),
+        stream: RoomService.instance.roomStream(widget.roomId),
         builder: (context, snap) {
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
           final data = snap.data!.data() ?? {};
@@ -61,41 +76,46 @@ class QuizBattleScreen extends StatelessWidget {
           final scores = Map<String, dynamic>.from(md['scores'] ?? {players.first: 0, players.last: 0});
           final deadlineMs = (md['deadlineMs'] ?? (DateTime.now().millisecondsSinceEpoch + 15000)) as int;
 
-          if (md.isEmpty) {
-            RoomService.instance.updateState(roomId, {
-              'matchData': {
-                'qIndex': 0,
-                'answers': <String, int>{},
-                'scores': scores,
-                'deadlineMs': DateTime.now().millisecondsSinceEpoch + 15000,
-              }
+          if (md.isEmpty && !_isInitializing) {
+            _isInitializing = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              await RoomService.instance.initializeMatchDataIfEmpty(
+                roomId: widget.roomId,
+                initialMatchData: {
+                  'qIndex': 0,
+                  'answers': <String, int>{},
+                  'scores': scores,
+                  'deadlineMs': DateTime.now().millisecondsSinceEpoch + 15000,
+                },
+              );
+              _isInitializing = false;
             });
           }
 
           if (status != 'finished' && qIndex >= questions.length) {
-            final a = scores[players.first] as int;
-            final b = scores[players.last] as int;
-            if (a == b) {
-              _finish(data, '', true);
-            } else {
-              _finish(data, a > b ? players.first : players.last, false);
-            }
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final a = scores[players.first] as int;
+              final b = scores[players.last] as int;
+              if (a == b) {
+                _finish(data, '', true);
+              } else {
+                _finish(data, a > b ? players.first : players.last, false);
+              }
+            });
           }
 
           if (status != 'finished' && qIndex < questions.length) {
             final timeOver = DateTime.now().millisecondsSinceEpoch > deadlineMs;
-            if (timeOver || answers.length == 2) {
-              final answer = questions[qIndex]['answer'] as int;
-              for (final p in players) {
-                if (answers[p] == answer) scores[p] = (scores[p] ?? 0) + 1;
-              }
-              RoomService.instance.updateState(roomId, {
-                'matchData': {
-                  'qIndex': qIndex + 1,
-                  'answers': <String, int>{},
-                  'scores': scores,
-                  'deadlineMs': DateTime.now().millisecondsSinceEpoch + 15000,
-                }
+            final shouldScore = timeOver || answers.length == 2;
+            if (shouldScore && _lastScoredQuestion != qIndex) {
+              _lastScoredQuestion = qIndex;
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                await RoomService.instance.finalizeQuizQuestion(
+                  roomId: widget.roomId,
+                  questionIndex: qIndex,
+                  correctAnswer: questions[qIndex]['answer'] as int,
+                  nextDeadlineMs: DateTime.now().millisecondsSinceEpoch + 15000,
+                );
               });
             }
           }
@@ -122,14 +142,7 @@ class QuizBattleScreen extends StatelessWidget {
                       trailing: answers[uid] == i ? const Icon(Icons.check_circle, color: Colors.greenAccent) : null,
                       onTap: status == 'finished' || answers.containsKey(uid)
                           ? null
-                          : () => RoomService.instance.updateState(roomId, {
-                                'matchData': {
-                                  'qIndex': qIndex,
-                                  'scores': scores,
-                                  'deadlineMs': deadlineMs,
-                                  'answers': {...answers, uid: i},
-                                }
-                              }),
+                          : () => RoomService.instance.submitQuizAnswer(roomId: widget.roomId, uid: uid, answerIndex: i),
                     ),
                   ),
               ],
