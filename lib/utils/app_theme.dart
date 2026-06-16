@@ -16,7 +16,7 @@ class AppTheme {
         secondary: neonPink,
       ),
       cardTheme: CardThemeData(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: Colors.white.withOpacity(0.06),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
